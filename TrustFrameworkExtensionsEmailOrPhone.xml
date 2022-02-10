@@ -287,10 +287,14 @@
                 </OrchestrationStep>
                 <OrchestrationStep Order="2" Type="ClaimsExchange">
                     <Preconditions>
-                      <!--Sample: If the preferred MFA method is not 'phone' skip this orchestration step-->
+                      <!--Sample: If the preferred MFA method is not 'phone' or there is no phone on file skip this orchestration step-->
                       <Precondition Type="ClaimEquals" ExecuteActionsIf="false">
                         <Value>mfaType</Value>
                         <Value>phone</Value>
+                        <Action>SkipThisOrchestrationStep</Action>
+                      </Precondition>
+                      <Precondition Type="ClaimsExist" ExecuteActionsIf="false">
+                        <Value>strongAuthenticationPhoneNumber</Value>
                         <Action>SkipThisOrchestrationStep</Action>
                       </Precondition>
                     </Preconditions>
@@ -311,12 +315,29 @@
                       <ClaimsExchange Id="Email-Verify" TechnicalProfileReferenceId="EmailVerifyOnSignIn" />
                     </ClaimsExchanges>
                 </OrchestrationStep>             
-                <OrchestrationStep Order="4" Type="ClaimsExchange">
+                  <!--Sample: If user selected 'phone' as the MFA type, but there is no phone number on file use email -->
+                  <OrchestrationStep Order="4" Type="ClaimsExchange">
+                    <Preconditions>
+                      <Precondition Type="ClaimEquals" ExecuteActionsIf="false">
+                        <Value>mfaType</Value>
+                        <Value>phone</Value>
+                        <Action>SkipThisOrchestrationStep</Action>
+                      </Precondition>
+                      <Precondition Type="ClaimsExist" ExecuteActionsIf="true">
+                        <Value>strongAuthenticationPhoneNumber</Value>
+                        <Action>SkipThisOrchestrationStep</Action>
+                      </Precondition>                      
+                    </Preconditions>
+                    <ClaimsExchanges>
+                      <ClaimsExchange Id="Email-Verify-NoPhone" TechnicalProfileReferenceId="EmailVerifyOnSignIn" />
+                    </ClaimsExchanges>
+                </OrchestrationStep>     
+                <OrchestrationStep Order="5" Type="ClaimsExchange">
                     <ClaimsExchanges>
                         <ClaimsExchange Id="NewCredentials" TechnicalProfileReferenceId="LocalAccountWritePasswordUsingObjectId" />
                     </ClaimsExchanges>
                 </OrchestrationStep>
-                <OrchestrationStep Order="5" Type="SendClaims" CpimIssuerTechnicalProfileReferenceId="JwtIssuer" />
+                <OrchestrationStep Order="6" Type="SendClaims" CpimIssuerTechnicalProfileReferenceId="JwtIssuer" />
             </OrchestrationSteps>
             <ClientDefinition ReferenceId="DefaultWeb" />
         </UserJourney>
